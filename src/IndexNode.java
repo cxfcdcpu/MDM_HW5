@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+
 /**
  * Created by xc9pd on 4/14/2016.
  */
@@ -11,7 +13,7 @@ public class IndexNode {
     //childrenNum represent the number of children a node have.
     public long childrenNum;
     //the children of a node, the label increasing from left to right of the array;
-    public long[] children;
+    public ArrayList<IndexNode> children;
     //check if the node a data node or an index node;
     public boolean isIndex;
 
@@ -20,7 +22,8 @@ public class IndexNode {
         this.fromLabel=fromLabel;
         this.toLabel=toLabel;
         this.childrenNum=childrenNum;
-        
+        this.isIndex=isIndex;
+        this.children=new ArrayList<IndexNode>();
     }
 
 
