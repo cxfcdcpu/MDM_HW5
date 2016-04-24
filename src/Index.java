@@ -19,9 +19,16 @@ public class Index {
     public long leafItemNum;
     //total level
     public long totalLevel;
-
+    //
+    public ArrayList<IndexNode> schedule;
+    //global index
+    public int globalIndex;
+    public long totalElement;
 
     public Index(long children,long ele,long C,long replicationLevel){
+        this.totalElement=ele;
+        globalIndex=0;
+        schedule=new ArrayList<IndexNode>();
         allData=new ArrayDeque<String>();
         //total time slot for all the data.
         long D=ele*C;
@@ -51,11 +58,13 @@ public class Index {
             for(int j=0;j<leafItemNum*C;j++){
                 String dataString=this.allData.poll();
                 String label=dataString.substring(5);
+                String rp=label.substring(label.indexOf("_"));
                 label=label.substring(0,label.indexOf("_"));
                //System.out.println(label);
                 long labelLong=Long.parseLong(label);
 
                 IndexNode data=new IndexNode(labelLong,labelLong,0,totalLevel+1,false);
+                data.rpString=rp;
                 leaf.children.add(data);
             }
             leafNodes.add(leaf);
@@ -67,26 +76,47 @@ public class Index {
                 String dataString=this.allData.poll();
                 String label=dataString.substring(5);
                 label=label.substring(0,label.indexOf("_"));
+                String rp=label.substring(label.indexOf("_"));
                 //System.out.println(label);
                 long labelLong=Long.parseLong(label);
                 IndexNode data=new IndexNode(labelLong,labelLong,0,totalLevel+1,false);
+                data.rpString=rp;
                 leaf.children.add(data);
             }
             leafNodes.add(leaf);
         }
 
         //System.out.println(leafNum);
+        /*
         for(IndexNode lf:leafNodes){
             System.out.println("leaf nodes from: "+lf.fromLabel+" to "+lf.toLabel);
         }
-
-
-
+        */
         //assign all index
         assignTree(root,children,totalLevel-1,0,leafNodes.size()-1,leafNodes);
 
+    }
+
+    public void replicateToLowerLevel(IndexNode roots){
+        if(replicationLevel==0)return;
+
+            roots.useOwn=false;
+            roots.useReplicationNode=true;
+        if(roots.layer<replicationLevel) {
+            int i = 1;
+            for (IndexNode in : roots.children) {
+
+                in.rpString = "_" + i;
+                in.rpIndex =new IndexNode(roots,in.rpString);
+                i++;
+
+                replicateToLowerLevel(in);
+                System.out.println(in.toString()+": "+in.rpIndex.toString() + in.rpString);
+            }
+        }
 
     }
+
 
     public void assignTree(IndexNode root,long children,long levelLeft,int left, int right,ArrayList<IndexNode> leafNodes){
         if (levelLeft==0)return;
@@ -107,26 +137,139 @@ public class Index {
         }
     }
 
+    public void broadcast(IndexNode roots){
+        if(roots.useReplicationNode&&roots.rpIndex==null){
+            for(IndexNode in:roots.children){
+                broadcast(in);
+            }
+        }
+        else if(roots.useReplicationNode&&roots.rpIndex!=null&&roots.layer<replicationLevel){
+            this.globalIndex++;
+            this.schedule.add(roots.rpIndex);
+            ArrayList<IndexNode> buf=new ArrayList<IndexNode>();
+            for(IndexNode tt:roots.rpIndex.children){
+                buf.add(tt.children.get(0).rpIndex);
+            }
+            roots.rpIndex.children.clear();
+            for(IndexNode tt:buf){
+                roots.rpIndex.children.add(tt);
+            }
+
+
+            roots.rpIndex.timeSlot=globalIndex;
+            for(IndexNode in:roots.children){
+                broadcast(in);
+            }
+
+        }
+        else if(roots.useReplicationNode&&roots.rpIndex!=null&&roots.layer==replicationLevel){
+            this.globalIndex++;
+            this.schedule.add(roots.rpIndex);
+            roots.rpIndex.timeSlot=globalIndex;
+            ArrayDeque<IndexNode> nodeQueue=new ArrayDeque<IndexNode>();
+            nodeQueue.add(roots);
+            while(!nodeQueue.isEmpty()){
+                IndexNode buffer=nodeQueue.poll();
+                this.globalIndex++;
+                this.schedule.add(buffer);
+                schedule.get(globalIndex-1).timeSlot=globalIndex;
+                for(IndexNode in:buffer.children){
+                    nodeQueue.add(in);
+                }
+            }
 
 
 
+        }
 
+    }
 
+    public void setControl(){
+        String initial=this.root.toString().substring(1);
+        long secondRange=(totalElement/children)-1;
+        int end=this.schedule.size()+1;
+        for(int i=end-2;i>0;i--){
+            IndexNode n=schedule.get(i);
+            if(n.toLabel-n.fromLabel>=secondRange&&n.toString().indexOf(initial)!=1){
+                n.hasControl=true;
+                n.control=end;
+            }
+            if(n.toString().indexOf(initial)==1)end=i+1;
+        }
+    }
 
+    public ArrayList<IndexNode> findData(int probe,long destination){
+        int mod=schedule.size();
+        ArrayList<IndexNode> result=new ArrayList<IndexNode>();
+        int in=probe-1;
+
+        boolean breaks=true;
+        while(breaks){
+            System.out.println(in+1);
+
+            if(schedule.get(in).toLabel==destination&&schedule.get(in).fromLabel==destination&&schedule.get(in).rpString.equals("_1")){
+                result.add(schedule.get(in));
+                breaks=false;
+            }
+            else if(schedule.get(in).isIndex&&destination<=schedule.get(in).toLabel&&destination>=schedule.get(in).fromLabel&&
+                    schedule.get(in).toLabel!=schedule.get(in).fromLabel){
+                int i=0;
+                result.add(schedule.get(in));
+                boolean get=true;
+
+                System.out.println(schedule.get(in).toString());
+
+                while(get){
+
+                    IndexNode node=schedule.get(in).children.get(i);
+                    if(destination>=node.fromLabel&&destination<=node.toLabel){
+                        in=node.timeSlot-1;
+                        get=false;
+                        System.out.println("find");
+                    }
+
+                   //System.out.println(node.toString());
+
+                    i++;
+                }
+            }
+            else if(schedule.get(in).isIndex&&schedule.get(in).hasControl){
+                result.add(schedule.get(in));
+                in=schedule.get(in).control-1;
+            }
+            else{
+                result.add((schedule.get(in)));
+                in=(in+1)%mod;
+            }
+        }
+        return result;
+
+    }
 
     public static void main(String[] arg){
         //C is the average time slot for a item
         long C=9;
         //ele is the number of total items.
-        long ele=75;
+        long ele=81;
         //children is the number of children of a index member
         long children=3;
         //replication level: if 1 then 1 level below the root need to be replicated.
-        long replicationLevel=1;
+        long replicationLevel=2;
         //initial the index object.
         Index id=new Index(children,ele,C,replicationLevel);
+        //replicate
+        id.replicateToLowerLevel(id.root);
 
+        id.broadcast(id.root);
+        id.setControl();
+        for(IndexNode in:id.schedule){
+            if(in.hasControl)System.out.print("next rootIndex is: "+in.control);
+            System.out.println(in.toString()+in.rpString+" current timeslot is: "+in.timeSlot);
+        }
         System.out.println(id.root.children.get(2).fromLabel);
+
+        id.findData(755,55);
+
 
 
 
