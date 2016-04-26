@@ -34,8 +34,8 @@ public class Index {
         long D=ele*C;
         this.replicationLevel=replicationLevel;
         //generating the data need to be broadcasting.format: Data_Label_timeslot;
-        for(long i=1;i<=D;i++){
-            this.allData.add("Data_"+((i-1)/C+1)+"_"+i%C);
+        for(long i=0;i<D;i++){
+            this.allData.add("Data_"+(i/C+1)+"_"+(i%C+1));
         }
         //the number of child of every node
         this.children=children;
@@ -192,7 +192,7 @@ public class Index {
 
     public void setControl(){
         String initial=this.root.toString().substring(1);
-        long secondRange=(totalElement/children)-1;
+        long secondRange=(totalElement/children)-2;
         int end=this.schedule.size()+1;
         for(int i=end-2;i>0;i--){
             IndexNode n=schedule.get(i);
