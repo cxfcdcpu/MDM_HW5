@@ -92,13 +92,25 @@ public class Index {
         }
 
         //System.out.println(leafNum);
-        /*
+/*
         for(IndexNode lf:leafNodes){
             System.out.println("leaf nodes from: "+lf.fromLabel+" to "+lf.toLabel);
         }
-        */
+      */
         //assign all index
         assignTree(root,children,totalLevel-1,0,leafNodes.size()-1,leafNodes);
+
+        System.out.println(totalLevel);
+
+        ArrayDeque<IndexNode> help=new ArrayDeque<IndexNode>();
+        help.add(root);
+        while(!help.isEmpty()){
+            IndexNode helpNode=help.poll();
+            System.out.println("Tree Node "+helpNode.toString()+helpNode.rpString);
+            for(IndexNode ii:helpNode.children){
+                help.add(ii);
+            }
+        }
 
     }
 
@@ -124,6 +136,7 @@ public class Index {
 
 
     public void assignTree(IndexNode root,long children,long levelLeft,int left, int right,ArrayList<IndexNode> leafNodes){
+        System.out.println("AssigningTree "+root.toString()+root.rpString+" left: "+left+" right: "+right+" LevelLeft: "+levelLeft);
         if (levelLeft==0)return;
         levelLeft--;
         int n=(int)((right-left+1)/children);
@@ -136,7 +149,7 @@ public class Index {
             else{
                 IndexNode middle=new IndexNode(startLabel,endLabel,children,root.layer+1,true);
                 root.children.add(middle);
-                assignTree(middle,children,levelLeft-1,s,e,leafNodes);
+                assignTree(middle,children,levelLeft,s,e,leafNodes);
             }
 
         }
@@ -207,6 +220,7 @@ public class Index {
     public ArrayList<IndexNode> findData(int probe,long destination){
         int mod=schedule.size();
         ArrayList<IndexNode> result=new ArrayList<IndexNode>();
+
         int in=probe-1;
 
         boolean breaks=true;
@@ -227,6 +241,7 @@ public class Index {
 
                 while(get){
 
+
                     IndexNode node=schedule.get(in).children.get(i);
                     if(destination>=node.fromLabel&&destination<=node.toLabel){
                         in=node.timeSlot-1;
@@ -234,7 +249,7 @@ public class Index {
                         System.out.println("find");
                     }
 
-                   //System.out.println(node.toString());
+                   System.out.println(node.toString());
 
                     i++;
                 }

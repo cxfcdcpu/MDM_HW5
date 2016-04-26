@@ -199,7 +199,7 @@ public class Demo extends JFrame implements ActionListener{
                 if(in.hasControl)System.out.print("next rootIndex is: "+in.control);
                 System.out.println(in.toString()+in.rpString+" current timeslot is: "+in.timeSlot);
             }
-            //System.out.println(id.root.children.get(2).fromLabel);
+            //System.out.println(id.root.children.get(1).children.get(1).fromLabel);
 
             this.sd=id.schedule;
 
