@@ -75,8 +75,13 @@ public class Index {
             for(int j=0;j<(leafItemNum+1)*C;j++){
                 String dataString=this.allData.poll();
                 String label=dataString.substring(5);
-                label=label.substring(0,label.indexOf("_"));
                 String rp=label.substring(label.indexOf("_"));
+                label=label.substring(0,label.indexOf("_"));
+
+                System.out.println(label);
+
+
+
                 //System.out.println(label);
                 long labelLong=Long.parseLong(label);
                 IndexNode data=new IndexNode(labelLong,labelLong,0,totalLevel+1,false);
@@ -148,6 +153,7 @@ public class Index {
             this.schedule.add(roots.rpIndex);
             ArrayList<IndexNode> buf=new ArrayList<IndexNode>();
             for(IndexNode tt:roots.rpIndex.children){
+                if(!tt.children.isEmpty())
                 buf.add(tt.children.get(0).rpIndex);
             }
             roots.rpIndex.children.clear();
