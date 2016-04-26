@@ -246,37 +246,6 @@ public class Index {
 
     }
 
-    public static void main(String[] arg){
-        //C is the average time slot for a item
-        long C=9;
-        //ele is the number of total items.
-        long ele=81;
-        //children is the number of children of a index member
-        long children=3;
-        //replication level: if 1 then 1 level below the root need to be replicated.
-        long replicationLevel=2;
-        //initial the index object.
-        Index id=new Index(children,ele,C,replicationLevel);
-        //replicate
-        id.replicateToLowerLevel(id.root);
 
-        id.broadcast(id.root);
-        id.setControl();
-        for(IndexNode in:id.schedule){
-            if(in.hasControl)System.out.print("next rootIndex is: "+in.control);
-            System.out.println(in.toString()+in.rpString+" current timeslot is: "+in.timeSlot);
-        }
-        System.out.println(id.root.children.get(2).fromLabel);
-
-        id.findData(755,55);
-
-
-
-
-
-
-
-
-    }
 
 }
